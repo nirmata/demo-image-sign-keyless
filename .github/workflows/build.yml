@@ -17,7 +17,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
   # Set these to your central signing repo (e.g. my-org/central-image-signer)
-  CENTRAL_SIGNING_REPO: "YOUR_ORG/YOUR_CENTRAL_SIGNING_REPO"
+  CENTRAL_SIGNING_REPO: "nirmata/nirmata-central-workflow"
 
 jobs:
   build-and-push:
