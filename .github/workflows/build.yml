@@ -1,5 +1,5 @@
 # =============================================================================
-# BUILDER REPO – Repo that builds images and wants the
+# BUILDER REPO – put this in each repo that builds images and wants the
 # central repo to sign them. After building and pushing the image, this
 # workflow triggers the central signing repo via repository_dispatch.
 # =============================================================================
@@ -16,7 +16,6 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
-  # Set these to your central signing repo (e.g. my-org/central-image-signer)
   CENTRAL_SIGNING_REPO: "nirmata/nirmata-central-workflow"
 
 jobs:
@@ -30,17 +29,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3.0.0
-
-      - name: Build
-        run: ./gradlew build
+      # If your image needs a pre-build (e.g. ./gradlew build), add Java/Gradle steps here
+      # and ensure gradlew is in your repo. Otherwise Docker build uses your Dockerfile as-is.
 
       - name: Log in to GHCR
         uses: docker/login-action@v3.0.0
