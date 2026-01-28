@@ -1,0 +1,88 @@
+# =============================================================================
+# BUILDER REPO – Repo that builds images and wants the
+# central repo to sign them. After building and pushing the image, this
+# workflow triggers the central signing repo via repository_dispatch.
+# =============================================================================
+
+name: Build image and request signature
+
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - v*
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+  # Set these to your central signing repo (e.g. my-org/central-image-signer)
+  CENTRAL_SIGNING_REPO: "YOUR_ORG/YOUR_CENTRAL_SIGNING_REPO"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ env.REGISTRY }}/${{ steps.repo.outputs.repo }}@${{ steps.docker-build-push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3.0.0
+
+      - name: Build
+        run: ./gradlew build
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{raw}}
+
+      - name: Build and push Docker image
+        id: docker-build-push
+        uses: docker/build-push-action@v5.0.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Lowercase repo name
+        id: repo
+        run: echo "repo=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Trigger central signing repo
+        run: |
+          IMAGE_REF="${{ env.REGISTRY }}/${{ steps.repo.outputs.repo }}@${{ steps.docker-build-push.outputs.digest }}"
+          PAYLOAD=$(jq -n \
+            --arg event_type "sign-image" \
+            --arg image_ref "$IMAGE_REF" \
+            --arg source_repo "${{ github.repository }}" \
+            --arg source_workflow "${{ github.workflow }}" \
+            --arg source_sha "${{ github.sha }}" \
+            '{event_type: $event_type, client_payload: {image_ref: $image_ref, source_repo: $source_repo, source_workflow: $source_workflow, source_sha: $source_sha}}')
+          curl -sS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.CENTRAL_SIGNER_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -d "$PAYLOAD" \
+            "https://api.github.com/repos/${{ env.CENTRAL_SIGNING_REPO }}/dispatches"
