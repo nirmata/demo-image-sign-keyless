@@ -10,25 +10,32 @@ This repo builds a container image and requests a signature from the **nirmata-c
 
 ## Demo Steps
 
-### 1. Trigger build and sign
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/nirmata/demo-image-sign-keyless.git
+cd demo-image-sign-keyless
+```
+
+### 2. Trigger build and sign
 
 ```bash
 git tag v1.0.8    #tag should be in the format v*
 git push origin v1.0.8
 ```
 
-### 2. Verify build and sign
+### 3. Verify build and sign
 
 - Check that the GitHub Action for **this repo** (build + push) completed successfully.
 - Check that the **nirmata-central-workflow** repo’s “Sign Nirmata image” workflow ran and succeeded (confirm image is signed).
 
-### 3. Configure Kyverno for the registry
+### 4. Configure Kyverno for the registry
 
 Details [here](https://kyverno.io/docs/policy-types/cluster-policy/verify-images/sigstore/#authentication).
 
 
 
-### 4. Deploy the policy
+### 5. Deploy the policy
 
 Apply the ClusterPolicy that verifies keyless signatures for `ghcr.io/nirmata/*`:
 
@@ -66,7 +73,7 @@ Save as `policy.yaml` and run:
 kubectl apply -f policy.yaml
 ```
 
-### 5. Positive test (signed image)
+### 6. Positive test (signed image)
 
 ```bash
 kubectl run pod --image=ghcr.io/nirmata/demo-image-sign-keyless:v1.0.8
@@ -74,7 +81,7 @@ kubectl run pod --image=ghcr.io/nirmata/demo-image-sign-keyless:v1.0.8
 
 The pod should be allowed (policy passes).
 
-### 6. Negative test (unsigned image)
+### 7. Negative test (unsigned image)
 
 ```bash
 kubectl run pod --image=ghcr.io/nirmata/kubectl:1.35.0
