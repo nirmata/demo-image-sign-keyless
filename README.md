@@ -1,6 +1,6 @@
 # Demo: Keyless Image Validation with Kyverno
 
-This repo builds a container image and requests a signature from the **nirmata-central-workflow** repo. Kyverno on a Kind cluster validates image signatures using an image verification policy.
+This repository demonstrate using a central reusable GitHub workflow for keyless signing with Sigstore Cosign. A kind cluster is used to deploy Kyverno and test with an ImageValidating policy.
 
 ## Setup
 
@@ -17,7 +17,7 @@ git clone https://github.com/nirmata/demo-image-sign-keyless.git
 cd demo-image-sign-keyless
 ```
 
-### 2. Trigger build and sign
+### 2. Trigger build and sign (via terminal or GitHub UI)
 
 ```bash
 git tag v1.0.8    #tag should be in the format v*
